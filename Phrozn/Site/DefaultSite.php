@@ -88,7 +88,14 @@ class DefaultSite
         $projectDir = $this->getProjectDir();
         $outputDir = $this->getOutputDir();
 
-        $dir = new \RecursiveDirectoryIterator($projectDir . '/media');
+        $config = $this->getSiteConfig();
+        if (isset($config['dirs']['media'])) {
+            $mediaDir = $config['dirs']['media'];
+        } else {
+            $mediaDir = 'media';
+        }
+
+        $dir = new \RecursiveDirectoryIterator($projectDir . '/' . $mediaDir);
         $it = new \RecursiveIteratorIterator($dir, \RecursiveIteratorIterator::SELF_FIRST);
         foreach ($it as $item) {
             $baseName = $item->getBaseName();
@@ -97,7 +104,7 @@ class DefaultSite
 
                 $path = $it->getSubPath();
 
-                $outputFile = $outputDir . '/media/' . $path
+                $outputFile = $outputDir . '/' . $mediaDir . '/' . $path
                             . (!empty($path) ? '/' : '')
                             . basename($inputFile);
 

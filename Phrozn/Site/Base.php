@@ -221,32 +221,50 @@ abstract class Base
         // configure skip files options
         $skipToken = '-!SKIP!-';
 
+        // These are special folders that can contain processable files
         $folders = array(
             'entries', 'styles', 'scripts'
         );
+
         foreach ($folders as $folder) {
+            if (!file_exists($projectDir . '/' . $folder)) {
+                continue;
+            }
+
             $dir = new \RecursiveDirectoryIterator($projectDir . '/' . $folder);
             $it = new \RecursiveIteratorIterator($dir, \RecursiveIteratorIterator::SELF_FIRST);
             foreach ($it as $item) {
+                if (!$item->isFile()) {
+                    continue;
+                }
+
                 $baseName = $item->getBaseName();
+                $parentBaseName = basename($item->getPath());
+
+                // Skip items that begin with underscore
+                if (strpos($parentBaseName, '_') === 0
+                    || strpos($baseName, '_') === 0
+                ) {
+                    continue;
+                }
+
                 if (isset($config['skip'])) {
                     $baseName = preg_replace($config['skip'], array_fill(0, count($config['skip']), $skipToken), $baseName);
                     if (strpos($baseName, $skipToken) !== false) {
                         continue;
                     }
                 }
-                if ($item->isFile()) {
-                    try {
-                        $factory = new View\Factory($item->getRealPath());
-                        $view = $factory->create();
-                        $view
-                            ->setSiteConfig($this->getSiteConfig())
-                            ->setOutputDir($outputDir);
-                        $this->views[] = $view;
-                    } catch (\Exception $e) {
-                        $this->getOutputter()
-                             ->stderr(str_replace($projectDir, '', $item->getRealPath()) . ': ' . $e->getMessage());
-                    }
+
+                try {
+                    $factory = new View\Factory($item->getRealPath());
+                    $view = $factory->create();
+                    $view
+                        ->setSiteConfig($this->getSiteConfig())
+                        ->setOutputDir($outputDir);
+                    $this->views[] = $view;
+                } catch (\Exception $e) {
+                    $this->getOutputter()
+                         ->stderr(str_replace($projectDir, '', $item->getRealPath()) . ': ' . $e->getMessage());
                 }
             }
         }
